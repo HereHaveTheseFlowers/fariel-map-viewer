@@ -28,7 +28,7 @@ export const hexGridOriginPx = {
   y: 34 * layoutScale,
 };
 
-export const mapImageSrc = "/world-map.webp";
+export const mapImageSrc = `${import.meta.env.BASE_URL}world-map.webp`;
 
 /** Стартовый кадр: гекс в центре экрана и базовый масштаб (чуть дальше, чем 1). */
 export const defaultViewAxial: Axial = { q: 40, r: 12 };
