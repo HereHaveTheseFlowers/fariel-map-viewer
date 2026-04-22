@@ -63,8 +63,19 @@ function devSaveGlobalLocationsPlugin(): Plugin {
   };
 }
 
+/** В GitHub Actions `GITHUB_REPOSITORY=owner/repo` — нужен `base` для Project Pages. Локально `/`. */
+function resolveBasePath(): string {
+  if (process.env.GITHUB_ACTIONS === "true" && process.env.GITHUB_REPOSITORY) {
+    const segment = process.env.GITHUB_REPOSITORY.split("/")[1];
+    if (segment) {
+      return `/${segment}/`;
+    }
+  }
+  return "/";
+}
+
 export default defineConfig({
-  base: "/fariel-map-viewer/",
+  base: resolveBasePath(),
   plugins: [react(), devSaveGlobalLocationsPlugin()],
   resolve: {
     alias: {
