@@ -30,6 +30,9 @@ function App() {
     []
   );
   const [editingInkColor, setEditingInkColor] = useState(defaultInkStrokeColor);
+  const [hoveredSidebarLocationKey, setHoveredSidebarLocationKey] = useState<
+    string | null
+  >(null);
   const inkSessionKeyRef = useRef<string | null>(null);
 
   const onHexClick = useCallback(
@@ -107,13 +110,18 @@ function App() {
       <div className="app-map-layout">
         <HexMapView
           locations={displayLocations}
+          externalHoveredKey={hoveredSidebarLocationKey}
           onHexClick={isDev ? onHexClick : undefined}
           inkDrawMode={inkDrawMode && editingAxial !== null}
           inkStrokesDraft={editingInkStrokes}
           onInkStrokesDraftChange={onInkStrokesDraftChange}
           inkPreviewColor={editingInkColor}
         />
-        <LocationsSidebar locations={displayLocations} />
+        <LocationsSidebar
+          locations={displayLocations}
+          hoveredLocationKey={hoveredSidebarLocationKey}
+          onHoveredLocationKeyChange={setHoveredSidebarLocationKey}
+        />
       </div>
       {isDev && (
         <LocationEditDialog

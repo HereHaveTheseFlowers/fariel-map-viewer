@@ -28,6 +28,7 @@ import { explorationAccentColor } from "@/entities/hex-map/explorationStatusUi";
 
 type HexMapViewProps = {
   locations: Record<string, HexLocationData>;
+  externalHoveredKey?: string | null;
   /** Если не задан — клик по гексу не открывает редактор (например, production). */
   onHexClick?: (key: string) => void;
   inkDrawMode?: boolean;
@@ -91,6 +92,7 @@ function clientToMapPoint(
 
 export function HexMapView({
   locations,
+  externalHoveredKey = null,
   onHexClick,
   inkDrawMode = false,
   inkStrokesDraft = [],
@@ -110,7 +112,7 @@ export function HexMapView({
   const [translateX, setTranslateX] = useState(0);
   const [translateY, setTranslateY] = useState(0);
 
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [mapHoveredKey, setMapHoveredKey] = useState<string | null>(null);
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
   const [previewInkStroke, setPreviewInkStroke] = useState<
     MapInkPoint[] | null
@@ -346,13 +348,15 @@ export function HexMapView({
     applyDefaultView();
   }, [applyDefaultView]);
 
+  const highlightedKey = externalHoveredKey ?? mapHoveredKey;
+
   const tooltipData = (() => {
-    if (!hoveredKey || !pointer) {
+    if (!mapHoveredKey || !pointer) {
       return null;
     }
-    const axial = parseAxialKey(hoveredKey);
+    const axial = parseAxialKey(mapHoveredKey);
     const coordsLabel = axial ? `Гекс q=${axial.q}, r=${axial.r}` : "Гекс";
-    const loc = locations[hoveredKey];
+    const loc = locations[mapHoveredKey];
     const title = loc?.name?.trim() ? loc.name : "Без названия";
     const description = loc?.description?.trim() ? loc.description : "";
     const metaLines =
@@ -450,8 +454,8 @@ export function HexMapView({
             />
             <HexSvgLayer
               locations={locations}
-              hoveredKey={hoveredKey}
-              onHoverKeyChange={setHoveredKey}
+              hoveredKey={highlightedKey}
+              onHoverKeyChange={setMapHoveredKey}
               onPointerClientMove={(x, y) => setPointer({ x, y })}
               previewInkStroke={previewInkStroke}
               previewInkColor={inkPreviewColor}

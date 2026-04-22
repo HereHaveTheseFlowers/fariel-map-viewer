@@ -148,6 +148,18 @@ body {
   gap: 2px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.locations-sidebar__item:hover {
+  background: rgba(212, 168, 75, 0.12);
+}
+
+.locations-sidebar__item[aria-current='true'] {
+  background: rgba(212, 168, 75, 0.2);
+  border-bottom-color: rgba(212, 168, 75, 0.45);
 }
 
 .locations-sidebar__item:last-child {
