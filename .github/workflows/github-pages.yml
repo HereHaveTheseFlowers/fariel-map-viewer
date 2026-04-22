@@ -1,3 +1,5 @@
+# Нужно один раз: repo Settings → Pages → Build and deployment → Source: GitHub Actions
+# https://github.com/HereHaveTheseFlowers/fariel-map-viewer/settings/pages
 name: Deploy to GitHub Pages
 
 on:
