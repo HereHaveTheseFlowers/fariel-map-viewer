@@ -264,7 +264,7 @@ body {
 }
 
 /* Гексы без локации — только жёлтое свечение при наведении.
-   Локации: свечение задаётся inline (hexCellGlow — статус исследования + опасность). */
+   Локации: тяжёлое свечение (drop-shadow) только при hover на карте/в списке — см. HexSvgLayer. */
 .hex-cell--no-danger:hover {
   filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.35));
 }
@@ -272,8 +272,8 @@ body {
 .hex-tooltip {
   position: fixed;
   z-index: 50;
-  min-width: 220px;
-  max-width: 320px;
+  min-width: 260px;
+  max-width: 420px;
   padding: 10px 12px;
   border-radius: 10px;
   background: rgba(15, 18, 24, 0.92);

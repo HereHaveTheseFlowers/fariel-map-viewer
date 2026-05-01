@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef, useState } from "react";
+
 type HexTooltipProps = {
   clientX: number;
   clientY: number;
@@ -12,6 +14,53 @@ type HexTooltipProps = {
   dangerLine?: { valueLabel: string; accentColor: string };
 };
 
+const edgeMargin = 8;
+const pointerPad = 14;
+
+function guessedPosition(clientX: number, clientY: number) {
+  const widthGuess = 400;
+  const heightGuess = 140;
+  const vw =
+    typeof window !== "undefined" ? window.innerWidth : clientX + widthGuess;
+  const vh =
+    typeof window !== "undefined" ? window.innerHeight : clientY + heightGuess;
+
+  let left = clientX + pointerPad;
+  let top = clientY + pointerPad;
+  if (left + widthGuess > vw - edgeMargin) {
+    left = Math.max(edgeMargin, clientX - widthGuess - pointerPad);
+  }
+  if (top + heightGuess > vh - edgeMargin) {
+    top = Math.max(edgeMargin, clientY - heightGuess - pointerPad);
+  }
+
+  return { left, top };
+}
+
+function tooltipLeftTopAfterMeasure(
+  clientX: number,
+  clientY: number,
+  width: number,
+  height: number,
+  vw: number,
+  vh: number,
+) {
+  let left = clientX + pointerPad;
+  let top = clientY + pointerPad;
+
+  if (left + width > vw - edgeMargin) {
+    left = clientX - width - pointerPad;
+  }
+  if (top + height > vh - edgeMargin) {
+    top = clientY - height - pointerPad;
+  }
+
+  left = Math.max(edgeMargin, Math.min(left, vw - width - edgeMargin));
+  top = Math.max(edgeMargin, Math.min(top, vh - height - edgeMargin));
+
+  return { left, top };
+}
+
 export function HexTooltip({
   clientX,
   clientY,
@@ -22,24 +71,47 @@ export function HexTooltip({
   explorationLine,
   dangerLine,
 }: HexTooltipProps) {
-  const pad = 14;
-  const vw =
-    typeof window !== 'undefined' ? window.innerWidth : clientX + 320;
-  const vh =
-    typeof window !== 'undefined' ? window.innerHeight : clientY + 200;
-  const widthGuess = 280;
-  const heightGuess = 120;
-  let left = clientX + pad;
-  let top = clientY + pad;
-  if (left + widthGuess > vw - 8) {
-    left = Math.max(8, clientX - widthGuess - pad);
-  }
-  if (top + heightGuess > vh - 8) {
-    top = Math.max(8, clientY - heightGuess - pad);
-  }
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const guess = guessedPosition(clientX, clientY);
+  const [{ left, top }, setCoords] = useState(guess);
+
+  useLayoutEffect(() => {
+    const el = tooltipRef.current;
+    if (!el || typeof window === "undefined") {
+      return;
+    }
+
+    const { width, height } = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const next = tooltipLeftTopAfterMeasure(
+      clientX,
+      clientY,
+      width,
+      height,
+      vw,
+      vh,
+    );
+    setCoords((prev) => {
+      if (prev.left === next.left && prev.top === next.top) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    clientX,
+    clientY,
+    title,
+    description,
+    coordsLabel,
+    metaLines,
+    explorationLine,
+    dangerLine,
+  ]);
 
   return (
     <div
+      ref={tooltipRef}
       className="hex-tooltip"
       style={{ left, top }}
       role="status"

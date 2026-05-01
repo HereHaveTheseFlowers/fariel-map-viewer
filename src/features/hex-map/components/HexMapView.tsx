@@ -54,9 +54,14 @@ const dangerLabel: Record<LocationDangerLevel, string> = {
 /** Доля от натурального размера карты; меньше — сильнее отдаление (вся карта на экране). */
 const minScale = 0.12;
 const maxScale = 2.8;
+/** Множитель за один wheel-событие; ближе к 1 — медленнее зум (было 0.9 / 1.1). */
+const wheelZoomOutFactor = 0.95;
+const wheelZoomInFactor = 1.05;
 const dragThresholdPx = 8;
 const inkMinDistPx = 1.5;
 const inkMinDistSq = inkMinDistPx * inkMinDistPx;
+/** Громкость фонового трека карты (0–1). */
+const mapMusicVolume = 0.65;
 
 type PointerDragState = {
   pointerId: number;
@@ -101,6 +106,7 @@ export function HexMapView({
 }: HexMapViewProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const worldRef = useRef<HTMLDivElement | null>(null);
+  const mapMusicRef = useRef<HTMLAudioElement | null>(null);
   const dragRef = useRef<PointerDragState | null>(null);
   const inkDrawRef = useRef<InkDrawPointerState | null>(null);
   const inkStrokeRef = useRef<MapInkPoint[] | null>(null);
@@ -114,6 +120,7 @@ export function HexMapView({
 
   const [mapHoveredKey, setMapHoveredKey] = useState<string | null>(null);
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
+  const [mapMusicPlaying, setMapMusicPlaying] = useState(false);
   const [previewInkStroke, setPreviewInkStroke] = useState<
     MapInkPoint[] | null
   >(null);
@@ -163,7 +170,7 @@ export function HexMapView({
         return;
       }
       e.preventDefault();
-      const factor = e.deltaY > 0 ? 0.9 : 1.1;
+      const factor = e.deltaY > 0 ? wheelZoomOutFactor : wheelZoomInFactor;
       const cur = scaleRef.current;
       const next = Math.min(maxScale, Math.max(minScale, cur * factor));
       if (Math.abs(next - cur) < 1e-6) {
@@ -177,11 +184,9 @@ export function HexMapView({
 
   const applyDefaultView = useCallback(() => {
     const el = viewportRef.current;
-    const world = worldRef.current;
     if (!el) {
       return;
     }
-    world?.style.removeProperty("transform");
     const rect = el.getBoundingClientRect();
     const { x: wx, y: wy } = axialToPixel(defaultViewAxial);
     const tx = rect.width / 2 - wx * defaultViewScale;
@@ -348,6 +353,40 @@ export function HexMapView({
     applyDefaultView();
   }, [applyDefaultView]);
 
+  const toggleMapMusic = useCallback(() => {
+    const a = mapMusicRef.current;
+    if (!a) {
+      return;
+    }
+    if (a.paused) {
+      void a.play().catch(() => {
+        setMapMusicPlaying(false);
+      });
+    } else {
+      a.pause();
+    }
+  }, []);
+
+  useEffect(() => {
+    const a = mapMusicRef.current;
+    if (!a) {
+      return;
+    }
+    a.volume = mapMusicVolume;
+    const onPlay = () => {
+      setMapMusicPlaying(true);
+    };
+    const onPause = () => {
+      setMapMusicPlaying(false);
+    };
+    a.addEventListener("play", onPlay);
+    a.addEventListener("pause", onPause);
+    return () => {
+      a.removeEventListener("play", onPlay);
+      a.removeEventListener("pause", onPause);
+    };
+  }, []);
+
   const highlightedKey = externalHoveredKey ?? mapHoveredKey;
 
   const tooltipData = (() => {
@@ -405,6 +444,19 @@ export function HexMapView({
   return (
     <div className="hex-map">
       <div className="hex-map__toolbar">
+        <audio
+          ref={mapMusicRef}
+          src="/Lind_Erebros_-_Journey.mp3"
+          loop
+          preload="none"
+        />
+        <button
+          type="button"
+          className="hex-btn hex-btn--small"
+          onClick={toggleMapMusic}
+        >
+          {mapMusicPlaying ? "Выключить музыку" : "Включить музыку"}
+        </button>
         <button
           type="button"
           className="hex-btn hex-btn--small"
@@ -451,6 +503,8 @@ export function HexMapView({
               height={mapImageHeightPx}
               alt="Карта долины Реорит - ДнД в ИЦ"
               draggable={false}
+              decoding="async"
+              fetchPriority="high"
             />
             <HexSvgLayer
               locations={locations}

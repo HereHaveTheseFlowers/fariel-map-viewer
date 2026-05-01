@@ -9,8 +9,8 @@ import {
 } from 'react';
 import type { HexLocationData, MapInkPoint } from '@/entities/hex-map/types';
 import { buildHexLocationGlowFilter } from '@/entities/hex-map/hexCellGlow';
-import { axialKey } from '@/entities/hex-map/types';
-import { buildHexGrid, axialToPixel, hexPolygonPoints } from '@/entities/hex-map/hexGeometry';
+import { dangerAccentColor } from '@/entities/hex-map/dangerLevelUi';
+import { hexGridCells } from '@/entities/hex-map/hexGeometry';
 import { terrainOverlayColor } from '@/entities/hex-map/terrainColors';
 import {
   mapImageHeightPx,
@@ -31,6 +31,7 @@ const HexMapCell = memo(function HexMapCell({
   points,
   fill,
   stroke,
+  strokeOpacity,
   strokeWidth,
   cellClassName,
   glowStyle,
@@ -41,6 +42,7 @@ const HexMapCell = memo(function HexMapCell({
   fill: string;
   stroke: string;
   strokeWidth: number;
+  strokeOpacity?: number;
   cellClassName: string;
   glowStyle: CSSProperties | undefined;
   onHoverKeyChange: (key: string | null) => void;
@@ -50,6 +52,7 @@ const HexMapCell = memo(function HexMapCell({
       points={points}
       fill={fill}
       stroke={stroke}
+      strokeOpacity={strokeOpacity}
       strokeWidth={strokeWidth}
       className={cellClassName}
       style={glowStyle}
@@ -83,7 +86,6 @@ export function HexSvgLayer({
   previewInkStroke,
   previewInkColor,
 }: HexSvgLayerProps) {
-  const hexes = useMemo(() => buildHexGrid(), []);
   const hoveredKeyRef = useRef(hoveredKey);
   const pointerMoveRafRef = useRef<number | null>(null);
   const pendingPointerRef = useRef<{ x: number; y: number } | null>(null);
@@ -177,10 +179,7 @@ export function HexSvgLayer({
       role="presentation"
       onPointerMove={onSvgPointerMove}
     >
-      {hexes.map((axial) => {
-        const key = axialKey(axial);
-        const { x, y } = axialToPixel(axial);
-        const points = hexPolygonPoints(x, y);
+      {hexGridCells.map(({ key, points }) => {
         const data = locations[key];
         const isHovered = hoveredKey === key;
         const terrainFill = data
@@ -189,15 +188,20 @@ export function HexSvgLayer({
         const fill = isHovered ? 'rgba(234, 179, 8, 0.38)' : terrainFill;
         const stroke = isHovered
           ? 'rgba(250, 204, 21, 0.95)'
-          : 'rgba(255, 255, 255, 0.28)';
-        const strokeWidth = isHovered ? 2.2 : 1;
+          : data !== undefined
+            ? dangerAccentColor[data.dangerLevel]
+            : 'rgba(255, 255, 255, 0.28)';
+        const strokeOpacity =
+          !isHovered && data !== undefined ? 0.5 : undefined;
+        const strokeWidth = isHovered ? 2.2 : data !== undefined ? 1.15 : 1;
         const cellClassName = data ? 'hex-cell' : 'hex-cell hex-cell--no-danger';
+        /** Цепочки drop-shadow на тысячах ячеек сильно грузят GPU; свечение только при hover. */
         const glowFilter =
-          data !== undefined
+          data !== undefined && isHovered
             ? buildHexLocationGlowFilter(
                 data.dangerLevel,
                 data.explorationStatus,
-                isHovered
+                true
               )
             : undefined;
 
@@ -208,6 +212,7 @@ export function HexSvgLayer({
             points={points}
             fill={fill}
             stroke={stroke}
+            strokeOpacity={strokeOpacity}
             strokeWidth={strokeWidth}
             cellClassName={cellClassName}
             glowStyle={

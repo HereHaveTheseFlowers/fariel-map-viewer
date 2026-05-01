@@ -1,4 +1,5 @@
 import type { Axial } from '@/entities/hex-map/types';
+import { axialKey } from '@/entities/hex-map/types';
 import {
   hexGridOriginPx,
   hexRadiusPx,
@@ -50,24 +51,38 @@ export function hexPolygonPoints(centerX: number, centerY: number): string {
   return corners.join(' ');
 }
 
-export function buildHexGrid(): Axial[] {
-  const result: Axial[] = [];
+export type HexGridCell = {
+  axial: Axial;
+  key: string;
+  points: string;
+};
+
+function buildHexGridCells(): HexGridCell[] {
+  const result: HexGridCell[] = [];
   const maxR =
     Math.ceil((mapImageHeightPx - hexGridOriginPx.y) / (hexRadiusPx * 1.5)) + 3;
   const maxQ =
     Math.ceil((mapImageWidthPx - hexGridOriginPx.x) / (hexRadiusPx * sqrt3)) + 3;
   for (let r = -3; r <= maxR; r++) {
     for (let q = -3; q <= maxQ; q++) {
-      const { x, y } = axialToPixel({ q, r });
+      const axial = { q, r };
+      const { x, y } = axialToPixel(axial);
       if (
         x >= -hexRadiusPx &&
         x <= mapImageWidthPx + hexRadiusPx &&
         y >= -hexRadiusPx &&
         y <= mapImageHeightPx + hexRadiusPx
       ) {
-        result.push({ q, r });
+        result.push({
+          axial,
+          key: axialKey(axial),
+          points: hexPolygonPoints(x, y),
+        });
       }
     }
   }
   return result;
 }
+
+/** Полная сетка карты с закэшированными вершинами (≈2.5k ячеек). */
+export const hexGridCells: HexGridCell[] = buildHexGridCells();
