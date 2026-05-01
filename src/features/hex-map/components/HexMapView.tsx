@@ -446,7 +446,7 @@ export function HexMapView({
       <div className="hex-map__toolbar">
         <audio
           ref={mapMusicRef}
-          src="/Lind_Erebros_-_Journey.mp3"
+          src={`${import.meta.env.BASE_URL}Lind_Erebros_-_Journey.mp3`}
           loop
           preload="none"
         />
